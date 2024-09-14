@@ -1,0 +1,7 @@
+FROM postgres:latest
+
+ENV POSTGRES_USER siddharth
+ENV POSTGRES_PASSWORD siddharth
+ENV POSTGRES_DB simplerest
+
+EXPOSE 5432
