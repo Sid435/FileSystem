@@ -1,0 +1,198 @@
+{
+  "info": {
+    "name": "File System Management Application",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Sign Up",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9010/auth/signup",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "9010",
+              "path": ["auth", "signup"]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "testuser",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "testpassword",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9010/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "9010",
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "testuser",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "testpassword",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Operations",
+      "item": [
+        {
+          "name": "Upload File",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "files",
+                  "type": "file",
+                  "src": "/path/to/your/file.txt"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8080/files/upload",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["files", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get File URL",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9010/files/get?fileName=example.txt",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "9010",
+              "path": ["files", "get"],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "example.txt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Handling",
+      "item": [
+        {
+          "name": "Missing Authorization",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/files/get?fileName=example.txt",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["files", "get"],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "example.txt"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Invalid File Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/files/get?fileName=nonexistent.txt",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8080",
+              "path": ["files", "get"],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "nonexistent.txt"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "jwt_token",
+      "value": ""
+    }
+  ]
+}
