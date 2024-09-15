@@ -2,14 +2,9 @@ package models
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
-	"github.com/golang-jwt/jwt"
 	"github.com/sid/FileSystem/pkg/config"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
@@ -75,52 +70,11 @@ func SaveMetadata(fileName, fileType, userID string, fileSize int64, s3Url strin
 	return nil
 }
 
-func GetMetaData(c *gin.Context) ([]FileMetadata, string) {
-	claims, _ := c.Get("claims")
-	userClaims := claims.(*jwt.MapClaims)
-	username := (*userClaims)["username"].(string)
-
-	fileName := c.Query("fileName")
-	fileType := c.Query("fileType")
-
-	cacheKey := fmt.Sprintf("file_metadata:%s:%s:%s", username, fileName, fileType)
-
-	var metadata []FileMetadata
-	cacheData, err := config.RedisClient.Get(context.Background(), cacheKey).Result()
-	if err == redis.Nil {
-
-		var dbMetadata []FileMetadata
-		query := db.Model(&FileMetadata{}).Where("user_id = ?", username)
-
-		if fileName != "" {
-			query = query.Where("file_name = ?", fileName)
-		}
-		if fileType != "" {
-			query = query.Where("file_type = ?", fileType)
-		}
-
-		if err := query.Find(&dbMetadata).Error; err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error retrieving files"})
-			return nil, ""
-		}
-
-		if len(dbMetadata) > 0 {
-			cacheData, _ := json.Marshal(dbMetadata)
-			config.RedisClient.Set(context.Background(), cacheKey, cacheData, 5*time.Minute).Err()
-		}
-		metadata = dbMetadata
-	} else if err == nil {
-
-		_ = json.Unmarshal([]byte(cacheData), &metadata)
-	} else {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching from Redis"})
-		return nil, username
+func GetFileMetadataByName(fileName, userID string) (*FileMetadata, error) {
+	var metadata FileMetadata
+	result := db.Where("file_name = ? AND user_id = ?", fileName, userID).First(&metadata)
+	if result.Error != nil {
+		return nil, result.Error
 	}
-
-	if len(metadata) == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"message": "No files found with the given metadata"})
-		return nil, username
-	}
-
-	return metadata, username
+	return &metadata, nil
 }

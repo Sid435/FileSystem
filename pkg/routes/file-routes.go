@@ -8,7 +8,7 @@ import (
 
 var FileRoutes = func(router *gin.RouterGroup) {
 	router.POST("/upload", controllers.UploadFile)
-	// router.GET("/file/:book_name", controllers.GetFile) // Uncomment this to handle file retrieval by name
+	router.GET("/get", controllers.GetPreSignedURL) // Uncomment this to handle file retrieval by name
 }
 var OnboardingRoutes = func(router *mux.Router) {
 	router.HandleFunc("/login", controllers.Login).Methods("POST")

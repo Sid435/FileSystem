@@ -7,26 +7,35 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 	"github.com/sid/FileSystem/pkg/config"
 	"github.com/sid/FileSystem/pkg/controllers"
 	"github.com/sid/FileSystem/pkg/routes"
 )
 
 func main() {
-	fmt.Println("this is me")
-	r := mux.NewRouter() // getting the route
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		panic(err.Error())
+	}
+	fmt.Println("Starting the servers...")
 	router := gin.Default()
 	config.InitRedis()
 
-	// Apply JWTAuthMiddleware to all /files routes
 	fileRouter := router.Group("/files")
 	fileRouter.Use(controllers.JWTAuthMiddleware)
 	{
-		routes.FileRoutes(fileRouter) // Assuming this is where file routes are defined
+		routes.FileRoutes(fileRouter)
 	}
-	if err := router.Run(":8080"); err != nil {
-		log.Fatal(err)
-	}
+
+	go func() {
+		if err := router.Run(":8080"); err != nil {
+			log.Fatalf("Gin server failed: %v", err)
+		}
+	}()
+
+	r := mux.NewRouter()
 	onBoard := r.PathPrefix("/auth").Subrouter()
 	routes.OnboardingRoutes(onBoard)
 
