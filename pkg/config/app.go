@@ -2,9 +2,7 @@ package config
 
 import (
 	"context"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/go-redis/redis/v8"
 	"gorm.io/driver/postgres"
@@ -16,14 +14,7 @@ var (
 )
 
 func Connect() {
-	dsn := fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		os.Getenv("DB_HOST"),
-		os.Getenv("DB_PORT"),
-		os.Getenv("DB_USER"),
-		os.Getenv("DB_PASSWORD"),
-		os.Getenv("DB_NAME"),
-	)
+	dsn := "host=localhost port=5432 user=siddharth password=siddharth dbname=file_system sslmode=disable"
 	d, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -39,7 +30,9 @@ var RedisClient *redis.Client
 
 func InitRedis() {
 	RedisClient = redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:%s", os.Getenv("REDIS_HOST"), os.Getenv("REDIS_PORT")),
+		Addr:     "localhost:6379", // Use the Redis container name as the hostname
+		Password: "",               // No password set
+		DB:       0,                // Use default DB
 	})
 
 	// Test the Redis connection

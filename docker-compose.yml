@@ -1,14 +1,6 @@
 version: '3.8'
 
 services:
-  # Redis service
-  redis:
-    image: "redis:alpine"
-    container_name: redis
-    ports:
-      - "6379:6379"
-
-  # PostgreSQL database service
   db:
     image: postgres:latest
     environment:
@@ -19,26 +11,22 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - app-network
 
-  # Go application service
-  app:
-    build: .
+  redis:
+    image: redis:latest
     ports:
-      - "8080:8080"
-    environment:
-      AWS_ACCESS_KEY_ID: "AKIAQXHOIJXXON7TKMET"
-      AWS_SECRET_ACCESS_KEY: "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"
-      AWS_REGION: "eu-north-1"
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_USER: siddharth
-      DB_PASSWORD: siddharth
-      DB_NAME: file_system
-      REDIS_HOST: redis
-      REDIS_PORT: "6379"
-    depends_on:
-      - db
-      - redis
+      - "6379:6379"
+    networks:
+      - app-network
+    volumes:
+      - redis-data:/data
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   db-data:
+  redis-data:

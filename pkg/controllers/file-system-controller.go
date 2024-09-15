@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"mime/multipart"
@@ -67,9 +66,9 @@ var bucketName string = "file-system-mangement"
 var uploader *s3manager.Uploader
 
 func init() {
-	var accessKey string = os.Getenv("AWS_ACCESS_KEY_ID")
-	var secretkey string = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	var region string = os.Getenv("AWS_REGION")
+	var accessKey string = "AKIAQXHOIJXXON7TKMET"
+	var secretkey string = "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"
+	var region string = "eu-north-1"
 
 	awsSession, err := session.NewSession(&aws.Config{
 		Region: aws.String(region),
@@ -145,9 +144,9 @@ func saveFile(fileReader io.Reader, fileHeader *multipart.FileHeader, username s
 	return url, nil
 }
 func GetPreSignedURL(c *gin.Context) {
-	var accessKey string = os.Getenv("AWS_ACCESS_KEY_ID")
-	var secretkey string = os.Getenv("AWS_SECRET_ACCESS_KEY")
-	var region string = os.Getenv("AWS_REGION")
+	var accessKey string = "AKIAQXHOIJXXON7TKMET"
+	var secretkey string = "3OZRIsuV86jxtWyzbhzRXFKQ4OaoqQUTrRD+9MSs"
+	var region string = "eu-north-1" // Replace with your AWS Secret Key
 	username := c.GetString("username")
 	fileName := c.Query("fileName")
 	if fileName == "" {
