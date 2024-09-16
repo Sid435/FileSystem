@@ -12,7 +12,6 @@
     - [File Operations](#file-operations)
   - [Testing](#testing)
     - [Postman Testing Guide](#postman-testing-guide)
-    - [Unit Testing](#unit-testing)
   - [Deployment](#deployment)
 
 ## Overview
@@ -77,15 +76,7 @@ Before setting up the application, ensure you have the following installed:
 
    This command builds the Docker images and starts all necessary services.
 
-4. **Run Migrations (if applicable)**
-
-   If your application uses database migrations:
-
-   ```bash
-   make migrate
-   ```
-
-5. **Start the Application**
+4. **Start the Application**
 
    ```bash
    make run
@@ -149,14 +140,6 @@ We provide a Postman collection for comprehensive API testing. Follow these step
    - Verify pre-signed URLs by accessing files through a web browser.
 
 Note: Replace `/path/to/your/file.txt` in the "Upload File" request with an actual file path when testing.
-
-### Unit Testing
-
-Run the application's unit tests with:
-
-```bash
-make test
-```
 
 This executes all unit tests and provides a coverage report.
 
