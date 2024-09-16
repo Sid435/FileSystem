@@ -24,14 +24,14 @@ type FileMetadata struct {
 	FileName  string    `gorm:"type:varchar(255)"`
 	FileType  string    `gorm:"type:varchar(100)"`
 	FileSize  int64     `gorm:"type:bigint"`
-	UserID    string    `gorm:"type:varchar(255)"` // Foreign key to the user if you have a user table
+	UserID    string    `gorm:"type:varchar(255)"`
 	S3Url     string    `gorm:"type:text"`
 	CreatedAt time.Time `gorm:"autoCreateTime"`
 }
 
 func init() {
-	config.Connect()     // establish connection
-	db = *config.GetDB() // initializing the db to a variable
+	config.Connect()
+	db = *config.GetDB()
 
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&FileMetadata{})

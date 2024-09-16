@@ -1,5 +1,5 @@
 build:
-	@go build -o bin/FileSystem cmd/main.go
+	@go build -o bin/FileSystem main.go
 
 run: build
 	@./bin/FileSystem

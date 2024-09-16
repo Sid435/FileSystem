@@ -7,12 +7,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"mime/multipart"
 
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 	"github.com/sid/FileSystem/pkg/config"
 	"github.com/sid/FileSystem/pkg/models"
 	"github.com/sid/FileSystem/pkg/utils"
@@ -25,6 +26,40 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
+var (
+	bucketName string
+	uploader   *s3manager.Uploader
+)
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file, using environment variables")
+	}
+	bucketName = os.Getenv("AWS_BUCKET_NAME")
+	if bucketName == "" {
+		log.Fatal("AWS_BUCKET_NAME environment variable is not set")
+	}
+
+	accessKey := os.Getenv("AWS_ACCESS_KEY_ID")
+	secretKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	region := os.Getenv("AWS_REGION")
+
+	if accessKey == "" || secretKey == "" || region == "" {
+		log.Fatal("AWS credentials or region are not set in environment variables")
+	}
+
+	awsSession, err := session.NewSession(&aws.Config{
+		Region:      aws.String(region),
+		Credentials: credentials.NewStaticCredentials(accessKey, secretKey, ""),
+	})
+
+	if err != nil {
+		log.Fatalf("Failed to create AWS session: %v", err)
+	}
+
+	uploader = s3manager.NewUploader(awsSession)
+}
 func Login(w http.ResponseWriter, r *http.Request) {
 	var userDetails = &models.User{}
 	utils.ParseBody(r, &userDetails)
@@ -60,30 +95,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	res, _ := json.Marshal(u)
 	w.WriteHeader(http.StatusOK)
 	w.Write(res)
-}
-
-var bucketName string = "file-system-mangement"
-var uploader *s3manager.Uploader
-
-func init() {
-	var accessKey string = "AKIAQXHOIJXXON7TKMET"
-	var secretkey string = "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"
-	var region string = "eu-north-1"
-
-	awsSession, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-		Credentials: credentials.NewStaticCredentials(
-			accessKey,
-			secretkey,
-			"",
-		),
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	uploader = s3manager.NewUploader(awsSession)
 }
 
 func UploadFile(c *gin.Context) {
@@ -123,11 +134,12 @@ func UploadFile(c *gin.Context) {
 	}
 
 	if len(errors) > 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": errors})
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": errors})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"urls": uploadedURLs})
 	}
 }
+
 func saveFile(fileReader io.Reader, fileHeader *multipart.FileHeader, username string) (string, error) {
 	s3Key := fmt.Sprintf("%s/%s", username, fileHeader.Filename)
 
@@ -143,10 +155,8 @@ func saveFile(fileReader io.Reader, fileHeader *multipart.FileHeader, username s
 
 	return url, nil
 }
+
 func GetPreSignedURL(c *gin.Context) {
-	var accessKey string = "AKIAQXHOIJXXON7TKMET"
-	var secretkey string = "3OZRIsuV86jxtWyzbhzRXFKQ4OaoqQUTrRD+9MSs"
-	var region string = "eu-north-1" // Replace with your AWS Secret Key
 	username := c.GetString("username")
 	fileName := c.Query("fileName")
 	if fileName == "" {
@@ -154,16 +164,14 @@ func GetPreSignedURL(c *gin.Context) {
 		return
 	}
 
-	// Create the S3 key, combining the folder (username) and file name
 	s3Key := fmt.Sprintf("%s/%s", username, fileName)
 
-	// Create a new AWS session with credentials
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region), // Set your region
+		Region: aws.String(os.Getenv("AWS_REGION")),
 		Credentials: credentials.NewStaticCredentials(
-			accessKey, // AWS Access Key ID
-			secretkey, // AWS Secret Access Key
-			"",        // Session token, if not applicable leave as empty string
+			os.Getenv("AWS_ACCESS_KEY_ID"),
+			os.Getenv("AWS_SECRET_ACCESS_KEY"),
+			"",
 		),
 	})
 
@@ -173,16 +181,13 @@ func GetPreSignedURL(c *gin.Context) {
 		return
 	}
 
-	// Create an S3 client
 	svc := s3.New(sess)
 
-	// Create a presigned request for the file
 	req, _ := svc.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(bucketName), // Ensure bucketName is defined
+		Bucket: aws.String(bucketName),
 		Key:    aws.String(s3Key),
 	})
 
-	// Generate the presigned URL with a 5-minute expiration
 	url, err := req.Presign(5 * time.Minute)
 	if err != nil {
 		log.Println("Failed to sign request", err)
@@ -190,31 +195,22 @@ func GetPreSignedURL(c *gin.Context) {
 		return
 	}
 
-	// Return the presigned download URL
 	c.JSON(http.StatusOK, gin.H{"download_url": url})
 }
+
 func GetFileURL(c *gin.Context) {
-	claims, exists := c.Get("claims")
+	username, exists := c.Get("username")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
 
-	mapClaims, ok := claims.(*jwt.MapClaims)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token claims"})
-		return
-	}
-	username, ok := (*mapClaims)["username"].(string)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username not found in token"})
-		return
-	}
 	fileName := c.Query("fileName")
 	if fileName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "fileName is required"})
 		return
 	}
+
 	cacheKey := fmt.Sprintf("file_url:%s:%s", username, fileName)
 	cachedURL, err := config.RedisClient.Get(context.Background(), cacheKey).Result()
 	if err == nil {
@@ -222,7 +218,7 @@ func GetFileURL(c *gin.Context) {
 		return
 	}
 
-	_, err = models.GetFileMetadataByName(fileName, username)
+	_, err = models.GetFileMetadataByName(fileName, username.(string))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return

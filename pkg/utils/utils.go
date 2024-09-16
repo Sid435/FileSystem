@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/golang-jwt/jwt"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 func ParseBody(r *http.Request, x interface{}) {
