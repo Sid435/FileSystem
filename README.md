@@ -1,14 +1,14 @@
 # File System Service
 
-This project is a file storage and management system built using Go, Gin framework, PostgreSQL, Redis, and AWS S3. It allows users to securely upload files, retrieve pre-signed URLs for downloading files, and manage file metadata. The system uses JWT-based authentication and caches file metadata with Redis for better performance.
+This project is a file storage and management system built using Go, the Gin framework, PostgreSQL, Redis, and AWS S3. It allows users to securely upload files, retrieve pre-signed URLs for downloading files, and manage file metadata. The system uses JWT-based authentication and caches file metadata with Redis for better performance.
 
 ## Features
 
 - **User Authentication**: Signup and login using secure password hashing (bcrypt) and JWT tokens.
 - **File Upload**: Upload multiple files to AWS S3.
 - **Pre-Signed URLs**: Retrieve time-limited pre-signed URLs to download files.
-- **File Metadata**: Stores file metadata such as filename, size, and content type in PostgreSQL.
-- **Caching**: Uses Redis to cache file metadata for faster access.
+- **File Metadata**: Store file metadata such as filename, size, and content type in PostgreSQL.
+- **Caching**: Use Redis to cache file metadata for faster access.
 
 ## Table of Contents
 
@@ -87,7 +87,7 @@ REDIS_PORT=6379
 
 - **Endpoint**: `/auth/signup`
 - **Method**: `POST`
-- **Description**: Registers a new user to the system.
+- **Description**: Registers a new user in the system.
 - **Request Body**:
 
     ```json
@@ -169,7 +169,7 @@ REDIS_PORT=6379
 - **Example**:
 
     ```bash
-    curl -X POST http://localhost:8080/files/upload \
+    curl -X POST http://localhost:9010/files/upload \
     -H "Authorization: Bearer your_jwt_token" \
     -F "files=@path_to_file1" \
     -F "files=@path_to_file2"
@@ -196,7 +196,7 @@ REDIS_PORT=6379
 - **Example**:
 
     ```bash
-    curl -X GET http://localhost:8080/files/get?fileName=file1.png \
+    curl -X GET http://localhost:9010/files/get?fileName=file1.png \
     -H "Authorization: Bearer your_jwt_token"
     ```
 
@@ -216,9 +216,6 @@ This will set up:
 
 ### Docker Services
 
-- **App**: Runs the Go application and exposes it on port `8080`.
+- **App**: Runs the Go application and exposes it on ports `8080` for authentication routes (login and signup) and `9010` for file-related routes (upload and retrieval).
 - **PostgreSQL**: Database service exposed on port `5432`.
 - **Redis**: Caching service exposed on port `6379`.
-
-
----
