@@ -78,3 +78,8 @@ func GetFileMetadataByName(fileName, userID string) (*FileMetadata, error) {
 	}
 	return &metadata, nil
 }
+
+func DeleteFileMetadata(id uint) error {
+	result := db.Delete(&FileMetadata{}, id)
+	return result.Error
+}

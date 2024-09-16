@@ -198,7 +198,7 @@ func GetPreSignedURL(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"download_url": url})
 }
 
-func GetFileURL(c *gin.Context) {
+func DeleteFile(c *gin.Context) {
 	username, exists := c.Get("username")
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -211,25 +211,38 @@ func GetFileURL(c *gin.Context) {
 		return
 	}
 
-	cacheKey := fmt.Sprintf("file_url:%s:%s", username, fileName)
-	cachedURL, err := config.RedisClient.Get(context.Background(), cacheKey).Result()
-	if err == nil {
-		c.JSON(http.StatusOK, gin.H{"url": cachedURL})
-		return
-	}
-
-	_, err = models.GetFileMetadataByName(fileName, username.(string))
+	metadata, err := models.GetFileMetadataByName(fileName, username.(string))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
 
-	s3URL := fmt.Sprintf("https://%s.s3.amazonaws.com/%s/%s", bucketName, username, fileName)
+	session, _ := session.NewSession(&aws.Config{
+		Region:      aws.String(os.Getenv("AWS_REGION")),
+		Credentials: credentials.NewStaticCredentials(os.Getenv("AWS_ACCESS_KEY_ID"), os.Getenv("AWS_SECRET_ACCESS_KEY"), ""),
+	})
+	svc := s3.New(session)
 
-	err = config.RedisClient.Set(context.Background(), cacheKey, s3URL, 5*time.Minute).Err()
+	_, err = svc.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(fmt.Sprintf("%s/%s", username, fileName)),
+	})
 	if err != nil {
-		log.Printf("Failed to set cache: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file from S3"})
+		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"url": s3URL})
+	err = models.DeleteFileMetadata(metadata.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete file metadata"})
+		return
+	}
+
+	cacheKey := fmt.Sprintf("file_url:%s:%s", username, fileName)
+	err = config.RedisClient.Del(context.Background(), cacheKey).Err()
+	if err != nil {
+		log.Printf("Failed to clear cache: %v", err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "File deleted successfully"})
 }

@@ -2,14 +2,24 @@ package controllers
 
 import (
 	"errors"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/joho/godotenv"
 )
 
-var secretKey = []byte("this-kiss-key")
+var secretKey = []byte(os.Getenv("JWT_SECRET"))
+
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file, using environment variables")
+	}
+}
 
 func VerifyToken(tokenString string) (*jwt.MapClaims, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
