@@ -1,221 +1,142 @@
-# File System Service
+# File System API
 
-This project is a file storage and management system built using Go, the Gin framework, PostgreSQL, Redis, and AWS S3. It allows users to securely upload files, retrieve pre-signed URLs for downloading files, and manage file metadata. The system uses JWT-based authentication and caches file metadata with Redis for better performance.
-
-## Features
-
-- **User Authentication**: Signup and login using secure password hashing (bcrypt) and JWT tokens.
-- **File Upload**: Upload multiple files to AWS S3.
-- **Pre-Signed URLs**: Retrieve time-limited pre-signed URLs to download files.
-- **File Metadata**: Store file metadata such as filename, size, and content type in PostgreSQL.
-- **Caching**: Use Redis to cache file metadata for faster access.
+This is a File System API built with Go, using PostgreSQL for database storage, Redis for caching, and AWS S3 for file storage. The API provides functionality for user authentication, file uploads, downloads, and deletions.
 
 ## Table of Contents
 
-- [File System Service](#file-system-service)
-  - [Features](#features)
+- [File System API](#file-system-api)
   - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Usage](#usage)
-    - [1. Signup](#1-signup)
-    - [2. Login](#2-login)
-    - [3. Upload Files](#3-upload-files)
-    - [4. Get Pre-Signed URLs](#4-get-pre-signed-urls)
-  - [Docker](#docker)
-    - [Docker Services](#docker-services)
+  - [Configuration](#configuration)
+  - [Running the Application](#running-the-application)
+  - [API Endpoints](#api-endpoints)
+  - [Testing with Postman](#testing-with-postman)
+    - [1. User Signup](#1-user-signup)
+    - [2. User Login](#2-user-login)
+    - [3. Upload File](#3-upload-file)
+    - [4. Get Pre-signed URL](#4-get-pre-signed-url)
+    - [5. Delete File](#5-delete-file)
+  - [Note](#note)
+
+## Prerequisites
+
+- Go 1.16+
+- PostgreSQL
+- Redis
+- AWS S3 account and credentials
+- Postman (for testing)
 
 ## Installation
 
 1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/FileSystem.git
+   cd FileSystem
+   ```
 
-    ```bash
-    git clone https://github.com/sid/FileSystem.git
-    cd FileSystem
-    ```
+2. Install dependencies:
+   ```
+   go mod tidy
+   ```
 
-2. Install Go dependencies:
+## Configuration
 
-    ```bash
-    go mod download
-    ```
+1. Create a `.env` file in the root directory with the following content:
+   ```
+   JWT_SECRET=your_jwt_secret
+   AWS_ACCESS_KEY_ID=your_aws_access_key
+   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
+   AWS_REGION=your_aws_region
+   AWS_BUCKET_NAME=your_s3_bucket_name
+   PORT=9010
+   ```
 
-3. Set up PostgreSQL and Redis using Docker:
+2. Update the database connection string in `app.go` if necessary.
 
-    ```bash
-    docker-compose up -d
-    ```
+## Running the Application
 
-4. Build the Go application:
+1. Start the application:
+   ```
+   go run main.go
+   ```
 
-    ```bash
-    go build -o main .
-    ```
+2. The application will start two servers:
+   - File operations server on port 8080
+   - Authentication server on port 9010 (or the port specified in the `PORT` environment variable)
 
-5. Run the application:
+## API Endpoints
 
-    ```bash
-    ./main
-    ```
+- Authentication:
+  - POST `/auth/signup`: User registration
+  - POST `/auth/login`: User login
 
-## Environment Variables
+- File Operations:
+  - POST `/files/upload`: Upload a file
+  - GET `/files/get`: Get a pre-signed URL for file download
+  - DELETE `/files/delete`: Delete a file
 
-Create a `.env` file in the root directory with the following variables:
+## Testing with Postman
 
-```bash
-# AWS Configuration
-AWS_ACCESS_KEY_ID=your_aws_access_key_id
-AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
-AWS_REGION=your_aws_region
-AWS_BUCKET_NAME=your_s3_bucket_name
+### 1. User Signup
 
-# Database Configuration
-DB_HOST=db
-DB_PORT=5432
-DB_USER=siddharth
-DB_PASSWORD=siddharth
-DB_NAME=file_system
+- Method: POST
+- URL: `http://localhost:9010/auth/signup`
+- Body (raw JSON):
+  ```json
+  {
+    "username": "testuser",
+    "name": "Test User",
+    "age": "25",
+    "password": "testpassword"
+  }
+  ```
+- Expected Response: 200 OK with user details
 
-# Redis Configuration
-REDIS_HOST=redis
-REDIS_PORT=6379
-```
+### 2. User Login
 
-## Usage
+- Method: POST
+- URL: `http://localhost:9010/auth/login`
+- Body (raw JSON):
+  ```json
+  {
+    "username": "testuser",
+    "password": "testpassword"
+  }
+  ```
+- Expected Response: 200 OK with JWT token
 
-### 1. Signup
+### 3. Upload File
 
-- **Endpoint**: `/auth/signup`
-- **Method**: `POST`
-- **Description**: Registers a new user in the system.
-- **Request Body**:
+- Method: POST
+- URL: `http://localhost:8080/files/upload`
+- Headers:
+  - Authorization: Bearer <jwt_token>
+- Body (form-data):
+  - Key: files
+  - Value: Select file(s)
+- Expected Response: 200 OK with uploaded file URL(s)
 
-    ```json
-    {
-      "username": "your_username",
-      "password": "your_password"
-    }
-    ```
+### 4. Get Pre-signed URL
 
-- **Response**:
+- Method: GET
+- URL: `http://localhost:8080/files/get?fileName=example.txt`
+- Headers:
+  - Authorization: Bearer <jwt_token>
+- Expected Response: 200 OK with pre-signed download URL
 
-    ```json
-    {
-      "ID": 1,
-      "Username": "your_username"
-    }
-    ```
+### 5. Delete File
 
-- **Example**:
+- Method: DELETE
+- URL: `http://localhost:8080/files/delete?fileName=example.txt`
+- Headers:
+  - Authorization: Bearer <jwt_token>
+- Expected Response: 200 OK with success message
 
-    ```bash
-    curl -X POST http://localhost:8080/auth/signup \
-    -H "Content-Type: application/json" \
-    -d '{"username": "testuser", "password": "password123"}'
-    ```
+Remember to replace `<jwt_token>` with the actual token received from the login endpoint.
 
-### 2. Login
+## Note
 
-- **Endpoint**: `/auth/login`
-- **Method**: `POST`
-- **Description**: Authenticates a user and returns a JWT token.
-- **Request Body**:
+Ensure that your AWS S3 bucket and Redis server are properly configured and accessible. Also, make sure your PostgreSQL database is set up and the connection string in `app.go` is correct.
 
-    ```json
-    {
-      "username": "your_username",
-      "password": "your_password"
-    }
-    ```
-
-- **Response**:
-
-    ```json
-    {
-      "token": "your_jwt_token"
-    }
-    ```
-
-- **Example**:
-
-    ```bash
-    curl -X POST http://localhost:8080/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"username": "testuser", "password": "password123"}'
-    ```
-
-### 3. Upload Files
-
-- **Endpoint**: `/files/upload`
-- **Method**: `POST`
-- **Description**: Uploads multiple files to AWS S3. Requires JWT authentication.
-- **Headers**: 
-  - `Authorization`: Bearer `your_jwt_token`
-  - `Content-Type`: multipart/form-data
-- **Form Data**:
-  - `files`: One or more files to be uploaded.
-
-- **Response**:
-
-    ```json
-    {
-      "urls": [
-        "https://your_bucket.s3.amazonaws.com/testuser/file1.png",
-        "https://your_bucket.s3.amazonaws.com/testuser/file2.jpg"
-      ]
-    }
-    ```
-
-- **Example**:
-
-    ```bash
-    curl -X POST http://localhost:9010/files/upload \
-    -H "Authorization: Bearer your_jwt_token" \
-    -F "files=@path_to_file1" \
-    -F "files=@path_to_file2"
-    ```
-
-### 4. Get Pre-Signed URLs
-
-- **Endpoint**: `/files/get`
-- **Method**: `GET`
-- **Description**: Generates a pre-signed URL for a file stored in S3. Requires JWT authentication.
-- **Headers**: 
-  - `Authorization`: Bearer `your_jwt_token`
-- **Query Params**:
-  - `fileName`: The name of the file to generate the pre-signed URL for.
-
-- **Response**:
-
-    ```json
-    {
-      "download_url": "https://your_bucket.s3.amazonaws.com/testuser/file1.png?X-Amz-Signature=..."
-    }
-    ```
-
-- **Example**:
-
-    ```bash
-    curl -X GET http://localhost:9010/files/get?fileName=file1.png \
-    -H "Authorization: Bearer your_jwt_token"
-    ```
-
-## Docker
-
-The project includes a `docker-compose.yml` file for easy setup of PostgreSQL, Redis, and the application. To start the services:
-
-```bash
-docker-compose up --build
-```
-
-This will set up:
-
-- **PostgreSQL** for file metadata storage.
-- **Redis** for caching.
-- **AWS S3** as the file storage backend (you need valid AWS credentials).
-
-### Docker Services
-
-- **App**: Runs the Go application and exposes it on ports `8080` for authentication routes (login and signup) and `9010` for file-related routes (upload and retrieval).
-- **PostgreSQL**: Database service exposed on port `5432`.
-- **Redis**: Caching service exposed on port `6379`.
+For any issues or feature requests, please open an issue on the GitHub repository.
