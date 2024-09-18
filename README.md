@@ -8,16 +8,15 @@ This is a File System API built with Go, using PostgreSQL for database storage, 
   - [Table of Contents](#table-of-contents)
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
-  - [Configuration](#configuration)
   - [Running the Application](#running-the-application)
   - [API Endpoints](#api-endpoints)
   - [Testing with Postman](#testing-with-postman)
-    - [1. User Signup](#1-user-signup)
-    - [2. User Login](#2-user-login)
-    - [3. Upload File](#3-upload-file)
-    - [4. Get Pre-signed URL](#4-get-pre-signed-url)
-    - [5. Delete File](#5-delete-file)
-  - [Note](#note)
+    - [Using the Postman Collection](#using-the-postman-collection)
+      - [Authentication](#authentication)
+      - [File Operations](#file-operations)
+      - [Error Handling](#error-handling)
+    - [Note](#note)
+  - [Note](#note-1)
 
 ## Prerequisites
 
@@ -39,21 +38,6 @@ This is a File System API built with Go, using PostgreSQL for database storage, 
    ```
    go mod tidy
    ```
-
-## Configuration
-
-1. Create a `.env` file in the root directory with the following content:
-   ```
-   JWT_SECRET=your_jwt_secret
-   AWS_ACCESS_KEY_ID=your_aws_access_key
-   AWS_SECRET_ACCESS_KEY=your_aws_secret_key
-   AWS_REGION=your_aws_region
-   AWS_BUCKET_NAME=your_s3_bucket_name
-   PORT=9010
-   ```
-
-2. Update the database connection string in `app.go` if necessary.
-
 ## Running the Application
 
 1. Start the application:
@@ -74,66 +58,69 @@ This is a File System API built with Go, using PostgreSQL for database storage, 
 - File Operations:
   - POST `/files/upload`: Upload a file
   - GET `/files/get`: Get a pre-signed URL for file download
-  - DELETE `/files/delete`: Delete a file
+  - DELETE `/files/delete`: Delete a file (not included in the current Postman collection)
 
 ## Testing with Postman
 
-### 1. User Signup
+We've provided a Postman collection to help you test the API endpoints. Follow these steps to use it:
 
-- Method: POST
-- URL: `http://localhost:9010/auth/signup`
-- Body (raw JSON):
-  ```json
-  {
-    "username": "testuser",
-    "name": "Test User",
-    "age": "25",
-    "password": "testpassword"
-  }
-  ```
-- Expected Response: 200 OK with user details
+1. Import the `File_System_Management.postman_collection.json` file into Postman.
+2. The collection is organized into folders: Auth, File Operations, and Error Handling.
 
-### 2. User Login
+### Using the Postman Collection
 
-- Method: POST
-- URL: `http://localhost:9010/auth/login`
-- Body (raw JSON):
-  ```json
-  {
-    "username": "testuser",
-    "password": "testpassword"
-  }
-  ```
-- Expected Response: 200 OK with JWT token
+#### Authentication
 
-### 3. Upload File
+1. Sign Up
+   - Request: POST `http://localhost:9010/auth/signup`
+   - Body: x-www-form-urlencoded
+     - username: testuser
+     - password: testpassword
+   - Expected Response: 200 OK with user details
 
-- Method: POST
-- URL: `http://localhost:8080/files/upload`
-- Headers:
-  - Authorization: Bearer <jwt_token>
-- Body (form-data):
-  - Key: files
-  - Value: Select file(s)
-- Expected Response: 200 OK with uploaded file URL(s)
+2. Login
+   - Request: POST `http://localhost:9010/auth/login`
+   - Body: x-www-form-urlencoded
+     - username: testuser
+     - password: testpassword
+   - Expected Response: 200 OK with JWT token
+   - After successful login, copy the JWT token and update the `jwt_token` variable in the collection variables.
 
-### 4. Get Pre-signed URL
+#### File Operations
 
-- Method: GET
-- URL: `http://localhost:8080/files/get?fileName=example.txt`
-- Headers:
-  - Authorization: Bearer <jwt_token>
-- Expected Response: 200 OK with pre-signed download URL
+3. Upload File
+   - Request: POST `http://localhost:8080/files/upload`
+   - Headers: 
+     - Authorization: Bearer {{jwt_token}}
+   - Body: form-data
+     - Key: files
+     - Value: Select file(s)
+   - Expected Response: 200 OK with uploaded file URL(s)
 
-### 5. Delete File
+4. Get File URL
+   - Request: GET `http://localhost:9010/files/get?fileName=example.txt`
+   - Headers:
+     - Authorization: Bearer {{jwt_token}}
+   - Expected Response: 200 OK with pre-signed download URL
 
-- Method: DELETE
-- URL: `http://localhost:8080/files/delete?fileName=example.txt`
-- Headers:
-  - Authorization: Bearer <jwt_token>
-- Expected Response: 200 OK with success message
+#### Error Handling
 
-Remember to replace `<jwt_token>` with the actual token received from the login endpoint.
+5. Missing Authorization
+   - Request: GET `http://localhost:8080/files/get?fileName=example.txt`
+   - No Authorization header
+   - Expected Response: 401 Unauthorized
+
+6. Invalid File Name
+   - Request: GET `http://localhost:8080/files/get?fileName=nonexistent.txt`
+   - Headers:
+     - Authorization: Bearer {{jwt_token}}
+   - Expected Response: 404 Not Found
+
+### Note
+
+- The Postman collection uses environment variables. Make sure to set the `jwt_token` variable after login.
+- The collection doesn't include a test for the file deletion endpoint. You may want to add this to your collection.
+- Some URLs in the collection use port 9010 while others use 8080. Ensure your servers are running on these ports or update the collection accordingly.
 
 ## Note
 

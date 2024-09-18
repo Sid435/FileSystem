@@ -52,13 +52,10 @@ func JWTAuthMiddleware(c *gin.Context) {
 		c.Abort()
 		return
 	}
-
-	// Remove "Bearer " prefix if it exists
 	if len(tokenString) > 7 && tokenString[:7] == "Bearer " {
 		tokenString = tokenString[7:]
 	}
 
-	// Verify the token
 	claims, err := VerifyToken(tokenString)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
@@ -66,7 +63,6 @@ func JWTAuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	// Extract username from token claims
 	username, ok := (*claims)["username"].(string)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Username missing in token"})
@@ -74,9 +70,6 @@ func JWTAuthMiddleware(c *gin.Context) {
 		return
 	}
 
-	// Store username in context
 	c.Set("username", username)
-
-	// Proceed to the next handler
 	c.Next()
 }
