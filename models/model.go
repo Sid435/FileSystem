@@ -24,6 +24,7 @@ func init() {
 	db.AutoMigrate(&User{})
 	db.AutoMigrate(&FileMetadata{})
 }
+
 func (u *User) CreateUser() *User {
 	hashPass, _ := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	u.Password = string(hashPass)
@@ -32,10 +33,12 @@ func (u *User) CreateUser() *User {
 }
 
 func GetUserByUsername(username string) (*User, *gorm.DB) {
-
 	var user User
 	db := db.Where("Username=?", username).Find(&user)
-	return &user, db
+	if db != nil {
+		return &user, db
+	}
+	return nil, nil
 }
 
 type FileMetadata struct {

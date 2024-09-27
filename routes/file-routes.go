@@ -7,7 +7,8 @@ import (
 
 var FileRoutes = func(router *gin.RouterGroup) {
 	router.POST("/upload", controllers.UploadFile)
-	router.POST("/get", controllers.GetSignedUrl)
+	router.GET("/get", controllers.GetSignedUrl)
+	router.DELETE("/delete", controllers.DeleteFile)
 }
 
 var AuthRoutes = func(router *gin.RouterGroup) {

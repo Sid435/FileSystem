@@ -65,7 +65,6 @@ func UploadFile(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
 	var errors []string
 	var uploadedURLs []string
 	files := form.File["files"]
@@ -165,7 +164,6 @@ func DeleteFile(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-
 	fileName := c.Query("file_name")
 	if fileName == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "fileName is required"})

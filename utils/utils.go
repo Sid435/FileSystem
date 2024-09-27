@@ -31,7 +31,7 @@ func CreateToken(username string) (string, error) {
 	jwt_token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
-			"exp":      time.Now().AddDate(0, 0, 30).Unix(), // 30 days validity
+			"exp":      time.Now().AddDate(0, 0, 30).Unix(),
 		},
 	)
 	token, err := jwt_token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))

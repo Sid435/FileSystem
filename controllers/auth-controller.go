@@ -18,6 +18,7 @@ func SignUp(c *gin.Context) {
 	if serch_user, _ := models.GetUserByUsername(CreateUser.Username); serch_user != nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": "user already exists",
+			"some":  serch_user,
 		})
 		return
 	} else {
