@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sid/FileSystem/config"
 	"github.com/sid/FileSystem/controllers"
 	"github.com/sid/FileSystem/routes"
 )
@@ -17,6 +18,7 @@ func main() {
 		})
 	})
 
+	config.InitRedis()
 	fileRouters := r.Group("/files")
 	fileRouters.Use(controllers.JwtAuthMiddleware)
 	{

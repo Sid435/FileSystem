@@ -15,7 +15,7 @@ func SignUp(c *gin.Context) {
 	CreateUser := &models.User{}
 	utils.ParseBody(c, CreateUser)
 
-	if serch_user, _ := models.GetByEmail(CreateUser.Email); serch_user != nil {
+	if serch_user, _ := models.GetUserByUsername(CreateUser.Username); serch_user != nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": "user already exists",
 		})
@@ -33,11 +33,11 @@ func SignUp(c *gin.Context) {
 func LogIn(c *gin.Context) {
 	var userDet = &models.User{}
 	utils.ParseBody(c, &userDet)
-	ex_username := userDet.Email
+	ex_username := userDet.Username
 	ex_pass := userDet.Password
-	user_from_data, _ := models.GetByEmail(userDet.Email)
+	user_from_data, _ := models.GetUserByUsername(userDet.Username)
 	if user_from_data != nil {
-		if err := bcrypt.CompareHashAndPassword([]byte(ex_pass), []byte(user_from_data.Email)); err != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(ex_pass), []byte(user_from_data.Username)); err != nil {
 			s, err := utils.CreateToken(ex_username)
 			if err != nil {
 				c.JSON(http.StatusConflict, gin.H{

@@ -1,10 +1,12 @@
 package config
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/joho/godotenv"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -34,4 +36,22 @@ func Connect() *gorm.DB {
 	}
 
 	return db
+}
+
+var RedisClient *redis.Client
+
+func InitRedis() {
+	RedisClient = redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379", // Use the Redis container name as the hostname
+		Password: "",               // No password set
+		DB:       0,                // Use default DB
+	})
+
+	// Test the Redis connection
+	_, err := RedisClient.Ping(context.Background()).Result()
+	if err != nil {
+		log.Fatalf("Could not connect to Redis: %v", err)
+	} else {
+		log.Println("Connected to Redis")
+	}
 }
