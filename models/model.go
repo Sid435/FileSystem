@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,13 +33,17 @@ func (u *User) CreateUser() *User {
 	return u
 }
 
-func GetUserByUsername(username string) (*User, *gorm.DB) {
+func GetUserByUsername(username string) (*User, error) {
 	var user User
-	db := db.Where("Username=?", username).Find(&user)
-	if db != nil {
-		return &user, db
+	result := db.Where("Username=?", username).First(&user)
+
+	if result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, result.Error
 	}
-	return nil, nil
+	return &user, nil
 }
 
 type FileMetadata struct {

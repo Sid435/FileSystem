@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -20,18 +21,21 @@ func init() {
 }
 
 func ParseBody(c *gin.Context, x interface{}) {
-	if body, err := ioutil.ReadAll(c.Request.Body); err != nil {
-		if err := json.Unmarshal([]byte(body), x); err != nil {
-			return
-		}
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "could not read request body"})
+		return
+	}
+	if err := json.Unmarshal(body, x); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid JSON format"})
+		return
 	}
 }
-
 func CreateToken(username string) (string, error) {
 	jwt_token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
 			"username": username,
-			"exp":      time.Now().AddDate(0, 0, 30).Unix(),
+			"exp":      time.Now().Add(time.Hour * 24).Unix(),
 		},
 	)
 	token, err := jwt_token.SignedString([]byte(os.Getenv("JWT_SECRET_KEY")))

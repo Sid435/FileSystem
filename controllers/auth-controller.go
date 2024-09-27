@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
@@ -23,9 +22,9 @@ func SignUp(c *gin.Context) {
 		return
 	} else {
 		u := CreateUser.CreateUser()
-		res, _ := json.Marshal(u)
+		// res, _ := json.Marshal(u)
 		c.JSON(http.StatusOK, gin.H{
-			"user": res,
+			"user": u,
 		})
 		return
 	}
@@ -38,7 +37,7 @@ func LogIn(c *gin.Context) {
 	ex_pass := userDet.Password
 	user_from_data, _ := models.GetUserByUsername(userDet.Username)
 	if user_from_data != nil {
-		if err := bcrypt.CompareHashAndPassword([]byte(ex_pass), []byte(user_from_data.Username)); err != nil {
+		if err := bcrypt.CompareHashAndPassword([]byte(user_from_data.Password), []byte(ex_pass)); err != nil {
 			s, err := utils.CreateToken(ex_username)
 			if err != nil {
 				c.JSON(http.StatusConflict, gin.H{
