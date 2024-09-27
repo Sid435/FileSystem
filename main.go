@@ -1,48 +1,32 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
-	"github.com/sid/FileSystem/pkg/config"
-	"github.com/sid/FileSystem/pkg/controllers"
-	"github.com/sid/FileSystem/pkg/routes"
+	"github.com/sid/FileSystem/controllers"
+	"github.com/sid/FileSystem/routes"
 )
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		log.Println("Error loading .env file, using environment variables")
-	}
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
 
-	fmt.Println("Starting the servers...")
-	router := gin.Default()
-	config.InitRedis()
-
-	fileRouter := router.Group("/files")
-	fileRouter.Use(controllers.JWTAuthMiddleware)
+	fileRouters := r.Group("/files")
+	fileRouters.Use(controllers.JwtAuthMiddleware)
 	{
-		routes.FileRoutes(fileRouter)
+		routes.FileRoutes(fileRouters)
 	}
 
-	go func() {
-		if err := router.Run(":8080"); err != nil {
-			log.Fatalf("Gin server failed: %v", err)
-		}
-	}()
+	fileRouters = r.Group("/auth")
+	routes.AuthRoutes(fileRouters)
 
-	r := mux.NewRouter()
-	onBoard := r.PathPrefix("/auth").Subrouter()
-	routes.OnboardingRoutes(onBoard)
-
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "9010"
+	if err := r.Run(":8080"); err != nil {
+		log.Fatal("Gin server failed")
 	}
-	log.Fatal(http.ListenAndServe(":"+port, r))
 }
