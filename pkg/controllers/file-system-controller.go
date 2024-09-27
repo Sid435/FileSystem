@@ -99,7 +99,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 func UploadFile(c *gin.Context) {
 	username := c.GetString("username")
-
 	form, err := c.MultipartForm()
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -108,9 +107,7 @@ func UploadFile(c *gin.Context) {
 
 	var errors []string
 	var uploadedURLs []string
-
 	files := form.File["files"]
-
 	for _, file := range files {
 		fileHeader := file
 
