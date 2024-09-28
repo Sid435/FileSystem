@@ -9,10 +9,18 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/joho/godotenv"
 )
 
+func init() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Error loading .env file, using environment variables")
+	}
+}
+
 func JwtAuthMiddleware(c *gin.Context) {
-	tokenString := c.GetHeader("Authorizarion")
+	tokenString := c.GetHeader("Authorization")
 	if tokenString == "" {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "You are unauthorized to access this endpoint",
@@ -33,9 +41,7 @@ func JwtAuthMiddleware(c *gin.Context) {
 		log.Fatal(err)
 		return
 	}
-
 	username, ok := (*claims)["username"].(string)
-
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Username missing",

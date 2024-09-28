@@ -62,36 +62,46 @@ func UploadFile(c *gin.Context) {
 	username := c.GetString("username")
 	form, err := c.MultipartForm()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to parse multipart form: " + err.Error()})
 		return
 	}
+
+	files := form.File["files"]
+	if len(files) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No files found in the request"})
+		return
+	}
+
 	var errors []string
 	var uploadedURLs []string
-	files := form.File["files"]
-	for _, file := range files {
-		fileHeader := file
 
-		f, err := fileHeader.Open()
+	for _, file := range files {
+
+		f, err := file.Open()
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("Error opening file %s: %s", fileHeader.Filename, err.Error()))
+			errors = append(errors, fmt.Sprintf("Error opening file %s: %s", file.Filename, err.Error()))
 			continue
 		}
-		defer f.Close()
 
-		uploadedURL, err := saveFile(f, fileHeader, username)
+		uploadedURL, err := saveFile(f, file, username)
+		f.Close()
+
 		if err != nil {
-			errors = append(errors, fmt.Sprintf("Error saving file %s: %s", fileHeader.Filename, err.Error()))
-		} else {
-			uploadedURLs = append(uploadedURLs, uploadedURL)
-			err := models.SaveMetadata(fileHeader.Filename, fileHeader.Header.Get("Content-Type"), username, fileHeader.Size, uploadedURL)
-			if err != nil {
-				errors = append(errors, fmt.Sprintf("Error saving metadata for file %s: %s", fileHeader.Filename, err.Error()))
-			}
+			errors = append(errors, fmt.Sprintf("Error saving file %s: %s", file.Filename, err.Error()))
+			continue
 		}
+
+		err = models.SaveMetadata(file.Filename, file.Header.Get("Content-Type"), username, file.Size, uploadedURL)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("Error saving metadata for file %s: %s", file.Filename, err.Error()))
+			continue
+		}
+
+		uploadedURLs = append(uploadedURLs, uploadedURL)
 	}
 
 	if len(errors) > 0 {
-		c.JSON(http.StatusInternalServerError, gin.H{"errors": errors})
+		c.JSON(http.StatusInternalServerError, gin.H{"errors": errors, "uploaded_urls": uploadedURLs})
 	} else {
 		c.JSON(http.StatusOK, gin.H{"urls": uploadedURLs})
 	}
@@ -101,13 +111,15 @@ func saveFile(fileReader io.Reader, fileHeader *multipart.FileHeader, username s
 	s3Key := fmt.Sprintf("%s/%s", username, fileHeader.Filename)
 
 	_, err := uploader.Upload(&s3manager.UploadInput{
-		Bucket: aws.String(bucketName),
+		Bucket: aws.String(bucketName), // Ensure `bucketName` is defined elsewhere in your code
 		Key:    aws.String(s3Key),
 		Body:   fileReader,
 	})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to upload file %s to S3: %w", fileHeader.Filename, err)
 	}
+
+	// Construct the S3 file URL using the bucket name and key
 	url := fmt.Sprintf("https://%s.s3.amazonaws.com/%s", bucketName, s3Key)
 
 	return url, nil
